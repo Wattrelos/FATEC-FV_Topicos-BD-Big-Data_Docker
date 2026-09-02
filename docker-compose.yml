@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Servidor Web NGINX
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./Beta_engine_SaaS:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+
+  # Backend PHP (Construído a partir do seu Dockerfile)
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./Beta_engine_SaaS:/var/www/html
+    depends_on:
+      - mariadb
+      - redis
+      - rabbitmq
+
+  # Banco de Dados
+  mariadb:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: saas_db
+      MYSQL_USER: saas_user
+      MYSQL_PASSWORD: saas_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Cache em Memória
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # Gerenciador de Filas
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # Porta de comunicação da aplicação
+      - "15672:15672" # Painel Web do RabbitMQ
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  db_data:

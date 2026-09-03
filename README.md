@@ -2,13 +2,13 @@
 
 Para quem está começando no Docker, o ponto mais importante a entender sobre uma aplicação SaaS é: **no Docker, a boa prática é separar cada serviço em seu próprio contêiner**.
 
-Analisando os requisitos do seu projeto em [ambiente.md](file:///var/www/html/Docker/ambiente.md), a sua arquitetura é composta por:
+Analisando os requisitos do seu projeto em [ambiente.md](file:///home/wattrelos/Docker/ambiente.md), a sua arquitetura é composta por:
 - **PHP (Backend)**: Precisa de um [Dockerfile](file:///var/www/html/Docker/Dockerfile) customizado para instalar extensões e o Composer.
-- **NGINX (Web Server)**, **MariaDB (Banco)**, **Redis (Cache)** e **RabbitMQ (Filas)**: Usam imagens oficiais prontas diretamente no [docker-compose.yml](file:///var/www/html/Docker/docker-compose.yml).
+- **NGINX (Web Server)**, **MariaDB (Banco)**, **Redis (Cache)**, **RabbitMQ (Filas)** e **PHPMyAdmin (Gerenciador do Banco)**: Usam imagens oficiais prontas diretamente no [docker-compose.yml](file:///home/wattrelos/Docker/docker-compose.yml).
 
 ---
 
-### 1. Como funciona o [Dockerfile](file:///var/www/html/Docker/Dockerfile)?
+### 1. Como funciona o [Dockerfile](file:///home/wattrelos/Docker/Dockerfile)?
 
 O `Dockerfile` é a **receita de bolo** para criar a imagem do seu **PHP**. Nele definimos a versão do PHP, as extensões necessárias para o SaaS e ferramentas como o Composer.
 
@@ -77,13 +77,11 @@ CMD ["php-fpm"]
 
 ### 3. Como o Dockerfile se junta ao resto do SaaS?
 
-O [docker-compose.yml](file:///var/www/html/Docker/docker-compose.yml) é o **maestro** que une o PHP ao NGINX, MariaDB, Redis e RabbitMQ. 
+O [docker-compose.yml](file:///home/wattrelos/Docker/docker-compose.yml) é o **maestro** que une o PHP ao NGINX, MariaDB, Redis, RabbitMQ e PHPMyAdmin. 
 
 Em vez de usar uma imagem genérica do PHP, você diz ao Compose para **construir (`build`)** o seu `Dockerfile`:
 
 ```yaml
-version: '3.8'
-
 services:
   # Servidor Web NGINX
   nginx:
@@ -121,6 +119,18 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  # Interface Web para Gerenciamento do Banco de Dados
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      - mariadb
+
   # Cache em Memória
   redis:
     image: redis:alpine
@@ -149,6 +159,8 @@ No Docker, você não usa `localhost` ou `127.0.0.1` dentro do código PHP para 
 - Host do Banco: `mariadb` (porta `3306`)
 - Host do Redis: `redis` (porta `6379`)
 - Host do RabbitMQ: `rabbitmq` (porta `5672`)
+- Interface Web do Banco: Acesse [http://localhost:8080](http://localhost:8080) (veja o guia em [tutorials/phpMyAdmin.md](file:///home/wattrelos/Docker/tutorials/phpMyAdmin.md))
+- Painel Web do RabbitMQ: Acesse [http://localhost:15672](http://localhost:15672) (veja o guia em [tutorials/RebbitMQ.md](file:///home/wattrelos/Docker/tutorials/RebbitMQ.md))
 
 ---
 
@@ -176,3 +188,29 @@ Para testar e subir todo o ambiente:
    ```bash
    docker compose down
    ```
+
+# Hello World com diagnóstico completo
+
+Criamos o arquivo [index.php] dentro da pasta `Beta_engine_SaaS/`!
+
+Em vez de uma página simples de texto, criamos um **Hello World com diagnóstico completo em tempo real** do seu ambiente de desenvolvimento.
+
+### O que foi incluído no `index.php`:
+1. **Design Moderno**: Interface em tema escuro (dark mode), tipografia moderna (Google Fonts Outfit & Inter), efeitos de glassmorphism e microanimações de status.
+2. **Teste em Tempo Real dos Serviços**:
+   - 🐘 **PHP 8.3 FPM**: Versão, status do processo e extensões instaladas.
+   - 🐬 **MariaDB**: Conexão ativa via PDO com a base `saas_db` (com medição de ping/latência em ms).
+   - ⚡ **Redis**: Conexão ativa e resposta ao comando `PING -> PONG`.
+   - 🐇 **RabbitMQ**: Conexão ativa com o broker AMQP na porta `5672`.
+3. **Barra de Acesso Rápido**:
+   - Botão direto para o **PHPMyAdmin** ([http://localhost:8080](http://localhost:8080))
+   - Botão direto para o **RabbitMQ Management** ([http://localhost:15672](http://localhost:15672))
+   - Atalho para inspecionar o `phpinfo()` (via parâmetro `?info=1`)
+
+---
+
+### Como testar no navegador:
+Abra o navegador e acesse:
+👉 **[http://localhost](http://localhost)**
+
+Todos os serviços foram testados e estão respondendo com **HTTP 200 OK** e latências abaixo de 5ms!

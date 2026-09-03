@@ -6,6 +6,7 @@ Requisitos:
 | NGINX       | Apache          | LiteSpeed     |
 | PHP         | ---             | ---           |
 | MariaDB       | PostgreSQL      | ---           |
+| PHPMyAdmin  | ---             | ---           |
 | Redis       | Memcached/OpCache | ---           |
 | RabbitMQ    | ---             | ---           |
 

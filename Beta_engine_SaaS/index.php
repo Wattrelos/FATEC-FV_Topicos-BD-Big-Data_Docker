@@ -15,12 +15,18 @@ $services = [
 // 1. Teste MariaDB (PDO)
 $start = microtime(true);
 try {
-    $pdo = new PDO("mysql:host=mariadb;port=3306;dbname=saas_db;charset=utf8mb4", "saas_user", "saas_password", [
+    $dbHost = getenv('DB_HOST') ?: 'mariadb';
+    $dbPort = getenv('DB_PORT') ?: '3306';
+    $dbName = getenv('DB_DATABASE') ?: 'saas_db';
+    $dbUser = getenv('DB_USERNAME') ?: 'saas_user';
+    $dbPass = getenv('DB_PASSWORD') ?: 'saas_password';
+
+    $pdo = new PDO("mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
         PDO::ATTR_TIMEOUT => 2,
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
     $services['mariadb']['status'] = true;
-    $services['mariadb']['message'] = "Conectado a saas_db (MariaDB 11)";
+    $services['mariadb']['message'] = "Conectado a {$dbName} (MariaDB 11)";
     $services['mariadb']['latency'] = round((microtime(true) - $start) * 1000, 2);
 } catch (Exception $e) {
     $services['mariadb']['message'] = "Erro: " . $e->getMessage();
@@ -30,11 +36,14 @@ try {
 $start = microtime(true);
 try {
     if (class_exists('Redis')) {
+        $redisHost = getenv('REDIS_HOST') ?: 'redis';
+        $redisPort = (int)(getenv('REDIS_PORT') ?: 6379);
+
         $redis = new Redis();
-        $connected = $redis->connect('redis', 6379, 2);
+        $connected = $redis->connect($redisHost, $redisPort, 2);
         if ($connected && $redis->ping()) {
             $services['redis']['status'] = true;
-            $services['redis']['message'] = "Conectado a redis:6379 (PONG)";
+            $services['redis']['message'] = "Conectado a {$redisHost}:{$redisPort} (PONG)";
             $services['redis']['latency'] = round((microtime(true) - $start) * 1000, 2);
         } else {
             $services['redis']['message'] = "Falha ao responder PING";
@@ -50,18 +59,23 @@ try {
 $start = microtime(true);
 try {
     if (class_exists('AMQPConnection')) {
+        $amqpHost = getenv('RABBITMQ_HOST') ?: 'rabbitmq';
+        $amqpPort = (int)(getenv('RABBITMQ_PORT') ?: 5672);
+        $amqpUser = getenv('RABBITMQ_USER') ?: 'guest';
+        $amqpPass = getenv('RABBITMQ_PASSWORD') ?: 'guest';
+
         $amqp = new AMQPConnection([
-            'host' => 'rabbitmq',
-            'port' => 5672,
+            'host' => $amqpHost,
+            'port' => $amqpPort,
             'vhost' => '/',
-            'login' => 'guest',
-            'password' => 'guest',
+            'login' => $amqpUser,
+            'password' => $amqpPass,
             'read_timeout' => 2
         ]);
         $amqp->connect();
         if ($amqp->isConnected()) {
             $services['rabbitmq']['status'] = true;
-            $services['rabbitmq']['message'] = "Conectado ao Broker AMQP (Porta 5672)";
+            $services['rabbitmq']['message'] = "Conectado ao Broker AMQP (Porta {$amqpPort})";
             $services['rabbitmq']['latency'] = round((microtime(true) - $start) * 1000, 2);
             $amqp->disconnect();
         } else {

@@ -87,7 +87,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./Beta_engine_SaaS:/var/www/html
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
@@ -99,6 +99,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: ${MARIADB_PORT:-3306}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:
       - ./Beta_engine_SaaS:/var/www/html
     depends_on:
@@ -110,12 +122,12 @@ services:
   mariadb:
     image: mariadb:11
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: saas_db
-      MYSQL_USER: saas_user
-      MYSQL_PASSWORD: saas_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${MARIADB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
 
@@ -123,10 +135,10 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     ports:
-      - "8080:80"
+      - "${PHPMYADMIN_PORT:-8080}:80"
     environment:
       PMA_HOST: mariadb
-      PMA_PORT: 3306
+      PMA_PORT: "${MARIADB_PORT:-3306}"
       UPLOAD_LIMIT: 64M
     depends_on:
       - mariadb
@@ -135,20 +147,21 @@ services:
   redis:
     image: redis:alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
 
   # Gerenciador de Filas
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # Porta de comunicação da aplicação
-      - "15672:15672" # Painel Web do RabbitMQ
+      - "${RABBITMQ_PORT:-5672}:5672"   # Porta de comunicação da aplicação
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Painel Web do RabbitMQ
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
 volumes:
   db_data:
+
 ```
 
 ---
@@ -188,8 +201,13 @@ Para testar e subir todo o ambiente:
    ```bash
    docker compose down
    ```
+6. **Reiniciar o ambiente**:
+   ```bash
+   docker compose restart
+   ```
 
-# Hello World com diagnóstico completo
+
+   # Hello World com diagnóstico completo
 
 Criamos o arquivo [index.php] dentro da pasta `Beta_engine_SaaS/`!
 
